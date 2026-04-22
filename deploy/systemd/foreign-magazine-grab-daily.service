@@ -1,0 +1,19 @@
+[Unit]
+Description=Foreign Magazine Grab Daily (Flask + APScheduler)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/foreign-magazine-grab-daily
+Environment=PORT=5050
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/bin/bash -lc 'set -euo pipefail; if [[ -d .venv ]]; then source .venv/bin/activate; fi; exec python3 app.py'
+Restart=always
+RestartSec=2
+
+# Hardening (optional)
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

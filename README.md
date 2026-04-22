@@ -96,6 +96,43 @@ crontab -e
 0 8 * * * /绝对路径/foreign\ magazine\ grab\ daily/run_daily.sh
 ```
 
+## 开机自启 + 挂掉自动重启（推荐）
+
+### macOS（launchd）
+仓库已提供模板文件：`deploy/launchd/com.foreignmagazine.daily.plist`。
+
+1) 先把其中的 `WorkingDirectory` 与 `ProgramArguments` 里的路径改成你机器上的真实项目路径（当前模板默认是：
+`/Users/BGS/Documents/foreign magazine grab daily`）。
+
+2) 加载并设为开机自启：
+
+```bash
+mkdir -p ~/Library/LaunchAgents
+cp "deploy/launchd/com.foreignmagazine.daily.plist" ~/Library/LaunchAgents/
+launchctl unload -w ~/Library/LaunchAgents/com.foreignmagazine.daily.plist 2>/dev/null || true
+launchctl load -w ~/Library/LaunchAgents/com.foreignmagazine.daily.plist
+```
+
+3) 查看状态与日志：
+
+```bash
+launchctl list | grep com.foreignmagazine.daily || true
+tail -n 200 "logs/launchd.out.log"
+tail -n 200 "logs/launchd.err.log"
+```
+
+`KeepAlive=true` 会在进程退出时自动拉起，实现“挂掉就重启”。
+
+### Linux（systemd）
+仓库提供模板：`deploy/systemd/foreign-magazine-grab-daily.service`（你需要把 `WorkingDirectory` 改成实际路径，例如 `/opt/foreign-magazine-grab-daily`）。
+
+```bash
+sudo cp deploy/systemd/foreign-magazine-grab-daily.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now foreign-magazine-grab-daily
+sudo systemctl status foreign-magazine-grab-daily --no-pager
+```
+
 ### 手动刷新
 UI 右上角 **立即刷新**，或：
 ```bash
