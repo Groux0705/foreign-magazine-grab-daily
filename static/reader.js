@@ -426,6 +426,10 @@ els.toolbar.addEventListener("click", (e) => {
     openNoteModal();
   } else if (btn.dataset.action === "vocab") {
     openVocabModal();
+  } else if (btn.dataset.action === "maimemo") {
+    const w = state.currentRangeMeta?.quote?.trim();
+    if (!w) return toast("请先选中一个词/词组", true);
+    addToMaiMemo({ word: w });
   }
 });
 
@@ -521,6 +525,26 @@ async function deleteVocab(id) {
   toast("已移除");
 }
 
+async function addToMaiMemo({ word }) {
+  try {
+    const resp = await fetch(`/api/maimemo/add_word`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ word }),
+    });
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok) {
+      toast(data?.message || data?.error || "同步到墨墨失败", true);
+      return;
+    }
+    toast(`已同步到墨墨：${data.normalized || word}`);
+    hideToolbar();
+    document.getSelection().removeAllRanges();
+  } catch (err) {
+    toast("同步到墨墨失败：" + err.message, true);
+  }
+}
+
 // ---------- modals ----------
 function openNoteModal() {
   if (!state.currentRangeMeta?.quote) return;
@@ -558,6 +582,12 @@ els.vocabModal.addEventListener("click", (e) => {
     const note = document.getElementById("vocab-note").value.trim();
     if (!word) return toast("请填写单词或词组", true);
     saveVocab({ word, note });
+    els.vocabModal.classList.remove("show");
+  }
+  if (act === "maimemo") {
+    const word = document.getElementById("vocab-word").value.trim();
+    if (!word) return toast("请填写单词或词组", true);
+    addToMaiMemo({ word });
     els.vocabModal.classList.remove("show");
   }
 });

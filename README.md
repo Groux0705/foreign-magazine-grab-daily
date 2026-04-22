@@ -139,6 +139,24 @@ UI 右上角 **立即刷新**，或：
 curl -X POST http://localhost:5050/api/refresh
 ```
 
+## 阅读器：一键同步单词到墨墨
+
+在阅读器页面（`/articles/<id>`）选中单词/词组后，工具条里新增了 **「＋ 墨墨」**，也可在“加入生词本”弹窗中点 **「同步到墨墨」**。
+
+### 配置
+在墨墨 App 中获取开放 API Token 后，启动服务前设置环境变量：
+
+```bash
+export MAIMEMO_TOKEN="BearerTokenHere"
+# 或者（兼容你可能已有的变量名）
+export MOMO_API_KEY="BearerTokenHere"
+python3 app.py
+```
+
+后端会按以下流程调用墨墨开放 API：
+1) `GET https://open.maimemo.com/open/api/v1/vocabulary?q=<word>` 查询词条并拿到 `id`
+2) `POST https://open.maimemo.com/open/api/v1/study/add_words` 把 `id` 加入墨墨学习词库
+
 ## REST API（供脚本/插件使用）
 
 | Method | Path | Notes |

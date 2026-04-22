@@ -41,6 +41,7 @@ from pathlib import Path
 from apscheduler.schedulers.background import BackgroundScheduler
 from flask import (Flask, Response, abort, jsonify, render_template, request,
                    send_from_directory)
+import requests
 
 import annotations as anno_helpers
 import db
@@ -317,6 +318,131 @@ def api_vocabulary_edit(vid: int):
     if not updated:
         return jsonify({"error": "no allowed fields"}), 400
     return jsonify(updated)
+
+
+# -------------------- MaiMemo integration --------------------
+
+MAIMEMO_BASE = "https://open.maimemo.com/open/api/v1"
+
+
+def _maimemo_token() -> str:
+    # Keep name explicit; user can export either key.
+    return (os.environ.get("MAIMEMO_TOKEN") or os.environ.get("MOMO_API_KEY") or "").strip()
+
+
+def _maimemo_headers() -> dict:
+    tok = _maimemo_token()
+    if not tok:
+        return {}
+    return {"Accept": "application/json", "Authorization": f"Bearer {tok}"}
+
+
+def _pick_vocab_id(payload: dict, query: str) -> str | None:
+    """Best-effort extraction of MaiMemo vocab id from lookup response."""
+    if not isinstance(payload, dict):
+        return None
+
+    # common shapes
+    direct = payload.get("id") or payload.get("voc_id")
+    if isinstance(direct, str) and direct:
+        return direct
+
+    for key in ("vocabulary", "word", "data"):
+        obj = payload.get(key)
+        if isinstance(obj, dict):
+            vid = obj.get("id") or obj.get("voc_id")
+            if isinstance(vid, str) and vid:
+                return vid
+
+    # list shapes
+    for key in ("vocabularies", "words", "items", "list", "data"):
+        arr = payload.get(key)
+        if isinstance(arr, list) and arr:
+            q = (query or "").strip().lower()
+            # prefer exact match if possible
+            for it in arr:
+                if not isinstance(it, dict):
+                    continue
+                txt = (it.get("word") or it.get("text") or it.get("name") or "").strip().lower()
+                if q and txt == q:
+                    vid = it.get("id") or it.get("voc_id")
+                    if isinstance(vid, str) and vid:
+                        return vid
+            # else first item with id
+            for it in arr:
+                if not isinstance(it, dict):
+                    continue
+                vid = it.get("id") or it.get("voc_id")
+                if isinstance(vid, str) and vid:
+                    return vid
+
+    return None
+
+
+@app.route("/api/maimemo/add_word", methods=["POST"])
+def api_maimemo_add_word():
+    tok = _maimemo_token()
+    if not tok:
+        return jsonify({
+            "error": "missing_token",
+            "message": "未配置墨墨 Token。请设置环境变量 MAIMEMO_TOKEN（或 MOMO_API_KEY）。",
+        }), 400
+
+    body = request.get_json(force=True, silent=True) or {}
+    raw = (body.get("word") or "").strip()
+    if not raw:
+        return jsonify({"error": "word is required"}), 400
+
+    # For multi-word phrases, normalize; for single word, lemmatize.
+    phrase = raw.strip()
+    normalized = anno_helpers.normalize_phrase(phrase) or anno_helpers.lemmatize(phrase) or phrase
+
+    try:
+        # 1) lookup vocabulary id by text
+        lookup = requests.get(
+            f"{MAIMEMO_BASE}/vocabulary",
+            params={"q": normalized},
+            headers=_maimemo_headers(),
+            timeout=12,
+        )
+        if not lookup.ok:
+            return jsonify({
+                "error": "lookup_failed",
+                "status": lookup.status_code,
+                "detail": lookup.text[:800],
+            }), 502
+        payload = lookup.json()
+        voc_id = _pick_vocab_id(payload, normalized)
+        if not voc_id:
+            return jsonify({
+                "error": "not_found",
+                "message": f"墨墨未找到该词条：{normalized}",
+            }), 404
+
+        # 2) add to study
+        resp = requests.post(
+            f"{MAIMEMO_BASE}/study/add_words",
+            json={"words": [{"id": voc_id}], "advance": False},
+            headers={**_maimemo_headers(), "Content-Type": "application/json"},
+            timeout=12,
+        )
+        if not resp.ok:
+            return jsonify({
+                "error": "add_failed",
+                "status": resp.status_code,
+                "detail": resp.text[:800],
+            }), 502
+        out = resp.json() if resp.content else {}
+        return jsonify({
+            "ok": True,
+            "word": raw,
+            "normalized": normalized,
+            "vocab_id": voc_id,
+            "added_count": out.get("added_count"),
+            "raw_response": out,
+        })
+    except requests.RequestException as e:
+        return jsonify({"error": "network_error", "message": str(e)}), 502
 
 
 @app.route("/api/vocabulary/export.csv")
