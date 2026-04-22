@@ -154,7 +154,7 @@ python3 app.py
 ```
 
 后端会按以下流程调用墨墨开放 API：
-1) `GET https://open.maimemo.com/open/api/v1/vocabulary?q=<word>` 查询词条并拿到 `id`
+1) `GET https://open.maimemo.com/open/api/v1/vocabulary?spelling=<word>` 查询词条并拿到 `id`
 2) `POST https://open.maimemo.com/open/api/v1/study/add_words` 把 `id` 加入墨墨学习词库
 
 ## REST API（供脚本/插件使用）

@@ -347,9 +347,14 @@ def _pick_vocab_id(payload: dict, query: str) -> str | None:
     if isinstance(direct, str) and direct:
         return direct
 
-    for key in ("vocabulary", "word", "data"):
+    for key in ("vocabulary", "word", "data", "voc"):
         obj = payload.get(key)
         if isinstance(obj, dict):
+            # MaiMemo commonly returns: {"data": {"voc": {"id": "...", "spelling": "..."}}}
+            if "voc" in obj and isinstance(obj.get("voc"), dict):
+                vid = obj["voc"].get("id") or obj["voc"].get("voc_id")
+                if isinstance(vid, str) and vid:
+                    return vid
             vid = obj.get("id") or obj.get("voc_id")
             if isinstance(vid, str) and vid:
                 return vid
@@ -401,7 +406,7 @@ def api_maimemo_add_word():
         # 1) lookup vocabulary id by text
         lookup = requests.get(
             f"{MAIMEMO_BASE}/vocabulary",
-            params={"q": normalized},
+            params={"spelling": normalized},
             headers=_maimemo_headers(),
             timeout=12,
         )
@@ -427,6 +432,25 @@ def api_maimemo_add_word():
             timeout=12,
         )
         if not resp.ok:
+            # MaiMemo often returns a structured error payload like:
+            # {"success": false, "errors":[{"code":"study_data_not_found","msg":"..."}]}
+            try:
+                err_payload = resp.json()
+                if (
+                    resp.status_code == 404
+                    and isinstance(err_payload, dict)
+                    and isinstance(err_payload.get("errors"), list)
+                    and err_payload["errors"]
+                    and isinstance(err_payload["errors"][0], dict)
+                    and err_payload["errors"][0].get("code") == "study_data_not_found"
+                ):
+                    return jsonify({
+                        "error": "maimemo_study_data_not_found",
+                        "message": "墨墨返回：学习数据不存在。请在墨墨 App 内开启“开放 API / 自动同步”，并确保账号状态正常后再试。",
+                        "detail": err_payload["errors"][0].get("msg"),
+                    }), 400
+            except Exception:
+                err_payload = None
             return jsonify({
                 "error": "add_failed",
                 "status": resp.status_code,
