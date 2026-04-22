@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>生词本 · 每日 TIME</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <header class="masthead">
+    <div class="masthead-inner">
+      <div class="masthead-left">
+        <a href="/" class="logo-mark" style="text-decoration:none;">T</a>
+        <div>
+          <h1 class="masthead-title">生 <em>词本</em></h1>
+          <p class="masthead-sub">专业词汇随手收 · 掌握度分级 · 可导出到 Anki</p>
+        </div>
+      </div>
+      <div class="masthead-right">
+        <a href="/api/vocabulary/export.csv" class="btn-refresh" title="导出 CSV">
+          ⬇ 导出 CSV
+        </a>
+      </div>
+    </div>
+    <nav class="topnav">
+      <a href="/">Today</a>
+      <a href="/library">Library</a>
+      <a href="/vocabulary" class="active">Vocabulary</a>
+    </nav>
+  </header>
+
+  <main id="main" style="max-width:1200px;margin:0 auto;padding:28px 32px 80px;">
+    <div class="filters">
+      <div class="segment" id="mastery-segment">
+        <button data-mastery="" class="active">全部</button>
+        <button data-mastery="0">新词</button>
+        <button data-mastery="1">学习中</button>
+        <button data-mastery="2">熟悉</button>
+        <button data-mastery="3">已掌握</button>
+      </div>
+      <select id="sort-select">
+        <option value="recent">按最近</option>
+        <option value="alpha">按字母</option>
+        <option value="mastery">按掌握度</option>
+      </select>
+      <input type="search" id="search-input" placeholder="搜索词 / 释义…" />
+      <span id="count-label" style="color:var(--ink-mute);font-size:13px;margin-left:auto;">—</span>
+    </div>
+
+    <div class="vocab-table" id="vocab-table">
+      <div class="vocab-row head">
+        <div>单词</div>
+        <div>例句 / 个人笔记</div>
+        <div>掌握度</div>
+        <div>操作</div>
+      </div>
+      <div id="vocab-rows"></div>
+    </div>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="/static/vocab.js"></script>
+</body>
+</html>

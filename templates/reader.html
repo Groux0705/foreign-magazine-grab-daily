@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ article.title }} · TIME Reader</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <header class="masthead">
+    <div class="masthead-inner">
+      <div class="masthead-left">
+        <a href="/" class="logo-mark" style="text-decoration:none;">T</a>
+        <div>
+          <h1 class="masthead-title" style="font-size:28px;">Reader</h1>
+          <p class="masthead-sub">离线阅读 · 划词学习</p>
+        </div>
+      </div>
+      <div class="masthead-right">
+        <a href="/" class="btn-chip">← 返回今日</a>
+        <a href="/library" class="btn-chip">文章库</a>
+        <a href="/vocabulary" class="btn-chip">生词本</a>
+      </div>
+    </div>
+  </header>
+
+  <div class="reader-shell">
+    <article class="reader-main" id="reader-main" data-article-id="{{ article.id }}">
+      <header class="reader-header">
+        <div class="reader-kicker">
+          {{ categories[article.category].label if article.category in categories else article.category }}
+          · {{ categories[article.category].label_cn if article.category in categories else "" }}
+        </div>
+        <h1 class="reader-title">{{ article.title }}</h1>
+        <div class="reader-meta">
+          {% if article.author %}<span>By {{ article.author }}</span><span>·</span>{% endif %}
+          {% if article.published_at %}<span>{{ article.published_at[:10] }}</span><span>·</span>{% endif %}
+          <span>{{ article.word_count or 0 }} words</span>
+          <span>·</span>
+          <a href="{{ article.source_url }}" target="_blank" rel="noopener" style="color:var(--ink-mute);">原文来源</a>
+        </div>
+        <div class="reader-actions" id="reader-actions">
+          <button class="btn-chip chip-favorite {% if article.is_favorite %}is-on{% endif %}" data-action="favorite">
+            {% if article.is_favorite %}★ 已收藏{% else %}☆ 收藏{% endif %}
+          </button>
+          <button class="btn-chip chip-library {% if article.in_library %}is-on{% endif %}" data-action="library">
+            📚 {% if article.in_library %}已加入{% else %}加入每日库{% endif %}
+          </button>
+          <button class="btn-chip chip-read {% if article.is_read %}is-on{% endif %}" data-action="read">
+            ✓ {% if article.is_read %}已读{% else %}标记已读{% endif %}
+          </button>
+        </div>
+      </header>
+
+      {% if article.cover_image %}
+      <figure style="margin:0 0 32px;">
+        <img src="{{ article.cover_image }}" alt="" style="width:100%;border-radius:10px;" />
+      </figure>
+      {% endif %}
+
+      <div id="reader-body" class="reader-body">
+        {{ article.content_html | safe }}
+      </div>
+    </article>
+
+    <aside class="reader-side">
+      <div class="panel panel-annotations">
+        <h3>📝 高亮与批注 <span id="anno-count" style="color:var(--ink-mute);font-weight:400;font-size:12px;"></span></h3>
+        <div id="anno-list"><div class="panel-empty">选中正文任意文本，即可高亮或添加批注。</div></div>
+      </div>
+      <div class="panel panel-vocab">
+        <h3>📚 本文生词 <span id="vocab-count" style="color:var(--ink-mute);font-weight:400;font-size:12px;"></span></h3>
+        <div id="vocab-list"><div class="panel-empty">把陌生词组"+ Vocabulary"存入生词本。</div></div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Selection toolbar (floats above selection) -->
+  <div id="anno-toolbar" class="anno-toolbar">
+    <button class="swatch" data-color="yellow"  title="黄色高亮"></button>
+    <button class="swatch" data-color="pink"    title="粉色高亮"></button>
+    <button class="swatch" data-color="green"   title="绿色高亮"></button>
+    <button class="swatch" data-color="blue"    title="蓝色高亮"></button>
+    <div class="sep"></div>
+    <button data-action="note">💬 Note</button>
+    <button data-action="vocab">＋ Vocabulary</button>
+  </div>
+
+  <div class="modal-backdrop" id="modal-note">
+    <div class="modal">
+      <h3>添加批注</h3>
+      <div class="quoted" id="note-quoted"></div>
+      <textarea id="note-comment" placeholder="写下你的想法（中英文均可）…"></textarea>
+      <div class="modal-actions">
+        <button data-act="cancel">取消</button>
+        <button class="primary" data-act="save">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="modal-vocab">
+    <div class="modal">
+      <h3>加入生词本</h3>
+      <div class="quoted" id="vocab-quoted"></div>
+      <label style="display:block;font-size:12px;color:var(--ink-mute);margin-bottom:4px;">单词 / 词组</label>
+      <input type="text" id="vocab-word" />
+      <label style="display:block;font-size:12px;color:var(--ink-mute);margin:10px 0 4px;">释义 / 记忆点（可选）</label>
+      <textarea id="vocab-note" placeholder="比如：battle-tested = 身经百战的"></textarea>
+      <div class="modal-actions">
+        <button data-act="cancel">取消</button>
+        <button class="primary" data-act="save">保存到生词本</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="/static/reader.js"></script>
+</body>
+</html>

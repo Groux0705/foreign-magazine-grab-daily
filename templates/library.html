@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>我的文章库 · 每日 TIME</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <header class="masthead">
+    <div class="masthead-inner">
+      <div class="masthead-left">
+        <div class="logo-mark">T</div>
+        <div>
+          <h1 class="masthead-title">我的 <em>文章库</em></h1>
+          <p class="masthead-sub">收藏、每日库、已读——按你的节奏复读</p>
+        </div>
+      </div>
+    </div>
+    <nav class="topnav">
+      <a href="/">Today</a>
+      <a href="/library" class="active">Library</a>
+      <a href="/vocabulary">Vocabulary</a>
+    </nav>
+  </header>
+
+  <main id="main" style="max-width:1200px;margin:0 auto;padding:28px 32px 80px;">
+    <div class="filters">
+      <div class="segment" id="filter-segment">
+        <button data-filter="all" class="active">全部</button>
+        <button data-filter="favorite">⭐ 收藏</button>
+        <button data-filter="library">📚 文章库</button>
+        <button data-filter="unread">● 未读</button>
+        <button data-filter="read">✓ 已读</button>
+      </div>
+      <select id="filter-category">
+        <option value="">全部分类</option>
+      </select>
+      <input type="search" id="filter-query" placeholder="搜索标题、摘要或正文…" />
+      <span id="filter-count" style="color:var(--ink-mute);font-size:13px;margin-left:auto;">—</span>
+    </div>
+
+    <div id="list" class="list-cards">
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+    </div>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="/static/library.js"></script>
+</body>
+</html>
